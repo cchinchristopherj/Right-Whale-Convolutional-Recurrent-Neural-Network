@@ -1,4 +1,4 @@
-Whale Convolutional Recurrent Neural Network
+Right Whale Detection Challenge Part III
 =========================
 
 Convolutional Recurrent Neural Network to Recognize Right Whale Upcalls 
