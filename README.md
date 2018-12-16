@@ -29,133 +29,15 @@ Many authors have combined convolutional neural networks (CNNs) and recurrent ne
 
 In this application, a bidirectional LSTM (capable of using information from not only past time steps, but also future time steps, to make predictions) is placed after the second convolutional layer. A single, fully-connected layer that follows serves as the final classifier. 
 
-
-The Kaggle challenge was to differentiate between short audio recordings of ambient noise vs right whale upcalls. A Convolutional Neural Network approach was chosen:
-- A spectrogram was first taken of every audio file in the training set 
-- The spectrogram's contrast was enhanced both horizontally (temporal dimension) and vertically (frequency dimension) by removing extreme values and implementing a sliding mean. Performing these two pre-processing steps separately on the original training set resulted in a new dataset twice as long.
-- All spectrograms were resized to (64x64x1) to ensure uniformity in input shape and facilitate input to the CNN 
-- The CNN model's hyperparameters were optimized through 3-Fold Cross Validation via GridSearchCV
-- The CNN was fit using the new, double-length, contrast-enhanced training set (84000 audio files). 
-- The test set consisted of 10000 audio files (~10% of the training set size) unseen by the CNN model. For prediction, a vertically-enhanced and horizontally-enhanced spectrogram was produced for each audio file and fed into the CNN. A "union" approach was taken, i.e. if the vertically-enhanced input yielded 1 and the horizontally-enhanced input yielded 0, the final predicted label was 1. 
-- Due to the unbalance between the sizes of the positive class (right whale upcall) and negative class (ambient noise), with the negative class being significantly larger, accuracy is not as useful a metric for model evaluation. (For example, a model that consistently predicted the negative class would yield a high accuracy, but fail to ever predict the positive class). The Receiver Operating Characteristic (ROC) curve was instead chosen for evaluation, being a measure of the true positive rate vs false positive rate as the discrimination threshold of the binary classifier is varied. The area under the curve (AUC) is a single number metric of a binary classifier's ROC curve and it is this ROC-AUC score that is used for evaluation of the CNN model. 
-- The final ROC-AUC score for the test set after 45 epochs and a batch size of 100 was: **98.25%**
-
-Modules and Installation Instructions
-=========================
-
-**"Standard" Modules Used (Included in Anaconda Distribution):** numpy, matplotlib, pylab, glob, aifc, os
-
-If necessary, these modules can also be installed via PyPI. For example, for the "numpy" module: 
-
-        pip install numpy
-
-**Additional Modules used:** skimage, sklearn, keras
-
-skimage and sklearn can be installed via PyPI. For example, for the "scikit-image" module:
-
-        pip install scikit-image
-
-For Keras, follow the instructions given in the [documentation](https://keras.io/#installation). Specifically, install the TensorFlow backend and, of the optional dependencies, install HDF5 and h5py if you would like to load and save your Keras models. 
-
-Correct Usage
-=========================
-
-My trained CNN model architecture and weights are saved in the "whale_cnn.h5" file. This file can be loaded using the command:
-
-    loaded_model = load_model('whale_cnn.h5')  
-    
-Note: "load_model" is a function from keras.models. 
-With this model loaded, you can follow the procedure as described in training.py to predict the label of a new audio file that may or may not contain a right whale upcall. 
-Note: Currently, code is not streamlined to predict the label of a new audio file not originating from train_2.zip (i.e. a new audio file from the user). A future implementation will most likely use sklearn's Pipeline to streamline this prediction process by automatically taking an input audio file, producing the vertically-enhanced and horizontally-enhanced spectrograms, feeding them into the CNN, and unioning the predicted labels to produce the final predicted label. 
-
-If you would like to replicate the process I used to train the CNN model, perform the following:
-First, download the training set "train_2.zip" from [here](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) to the desired directory on your computer.
-Then run:
-
-    python training.py 
-    
-This trains the weights of the CNN model on the dataset. With the "model" variable referring to the sklearn-wrapped Keras model, this trained model can be saved to your computer using the command:
-
-    model.model.save('whale_cnn.h5')  
-    
-Note: Since "model" has an sklearn wrapper, you must use model.model.save instead of model.save (as you would for a normal Keras model) to save it to your computer. 
-
-Code is also provided demonstrating my hyperparameter optimization process via GridSearchCV. If you would like to replicate this procedure to tune the number of neurons in the CNN model's fully-connected layer, first download the training set "train_2.zip" from [here](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) if not previously downloaded. 
-Then run:
-
-    python tuning.py 
-    
-This prints the best score and corresponding parameter (best # of neurons) found by GridSearchCV, along with the mean scores and standard deviation of the scores found for all of the other parameters. 
-Note: For simplicity, these "scores" produced by GridSearchCV were accuracy-based, which is not ideal metric due to the nature of this particular dataset, as described previously. A future implementation will use the ROC-AUC scores for hyperparameter tuning. 
-
-Results of Pre-Processing
-=========================
-
-Pre-Processing involved generation of spectrograms with vertically-enhanced contrast and horizontally-enhanced contrast for input to the CNN. Below is an example of an audio file with right whale upcall present before and after pre-processing.
-
-- Spectrogram of an audio file with right whale upcall (original before pre-processing):
-![upcall_original](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Upcall/upcall_original%5B93%5D.png)
-
-*Note: You can see a faint diagonal upward trajectory in the spectrogram from about 0.50 to 1.25 seconds that indicates the 
-presence of the right whale upcall. This feature was enhanced in the following two images.*
-
-- Spectrogram of the original audio file with vertically-enhanced contrast via the "SlidingWindowV" function in "whale_cnn.py":
-![upcall_v_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Upcall/upcall_v_enhanced%5B93%5D.png)
-
-*Note: The vertically-enhanced contrast emphasizes the upcall feature in the frequency domain, removing extreme values and 
-local means to facilitate classification.*
-
-- Spectrogram of the original audio file with horizontally-enhanced contrast via the "SlidingWindowH" function in "whale_cnn.py":
-![upcall_h_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Upcall/upcall_h_enhanced%5B93%5D.png)
-
-*Note: The horizontally-enhanced contrast emphasizes the upcall feature in the temporal domain and offers a different 
-perspective of the same spectrogram for input to the classifier.*
-
-For comparison, below is an example of an audio file with right whale upcall absent (solely ambient noise) before and after pre-processing.
-
-- Spectrogram of an audio file with right whale upcall absent (original before pre-processing):
-![ambient1_original](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient1/ambient1_original%5B0%5D.png)
-
-*Note: At first glance with no pre-processing, there are no distinguishable features in the image, only a background
-of low frequency ambient ocean noise.*
-
-- Spectrogram of the original audio file with vertically-enhanced contrast via the "SlidingWindowV" function in "whale_cnn.py":
-![ambient1_v_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient1/ambient1_v_enhanced%5B0%5D.png)
-
-*Note: The vertically-enhanced contrast removes extreme values and local means to facilitate classification. A small noise
-feature from 0.8 to 1.0 seconds is emphasized. By comparison with the spectrograms of ambient noise (2 of 2), which empahsize a different shape of noise feature, there are a large variety of noise feature shapes that the classifier must learn to distinguish from features characteristic of right whale upcalls.*
-
-- Spectrogram of the original audio file with horizontally-enhanced contrast via the "SlidingWindowH" function in "whale_cnn.py":
-![ambient1_h_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient1/ambient1_h_enhanced%5B0%5D.png)
-
-*Note: The horizontally-enhanced contrast emphasizes the noise feature in the temporal domain and offers a different 
-perspective of the same spectrogram for input to the classifier.*
-
-For further comparison, below is another example of an audio with right whale upcall absent (solely ambient noise) before and after pre-processing.
-
-- Spectrogram of an audio file with right whale upcall absent (original before pre-processing):
-![ambient2_original](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient2/ambient2_original%5B1%5D.png)
-
-*Note: At first glance with no pre-processing, there are no distinguishable features in the image, only a background
-of low frequency ambient ocean noise.*
-
-- Spectrogram of the original audio file with vertically-enhanced contrast via the "SlidingWindowV" function in "whale_cnn.py":
-![ambient2_v_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient2/ambient2_v_enhanced%5B1%5D.png)
-
-*Note: The vertically-enhanced contrast removes extreme values and local means to facilitate classification. A small noise
-feature from 0.50 to 1.50 seconds is emphasized. By comparison with the spectrograms of ambient noise (1 of 2), which emphasize a different shape of noise feature, there are a large variety of noise feature shapes that the classifier must learn to distinguish from features characteristic of right whale upcalls.*
-
-- Spectrogram of the original audio file with horizontally-enhanced contrast via the "SlidingWindowH" function in "whale_cnn.py":
-![ambient2_h_enhanced](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Ambient2/ambient2_h_enhanced%5B1%5D.png)
-
-*Note: The horizontally-enhanced contrast emphasizes the noise feature in the temporal domain and offers a different 
-perspective of the same spectrogram for input to the classifier.*
-
 Results of Tuning
 =========================
 
-Hyperparameter Optimization was conducted using GridSearchCV's default 3-Fold Cross Validation 
-As an example, the number of neurons in the fully-connected layer ("fc1" in the diagram below) was tuned using this method in tuning.py. The printed results were as follows, with the best accuracy associated with 200 neurons. This is the number of neurons used in the final model architecture. 
+Hyperparameter optimization was performed via stratified k-fold cross validation where k=3, i.e. the dataset was partitioned 3 different times and performance statistics obtained over all the folds. A grid was created of the potential values for each hyperparameter of interest:
+- Patch Size (f): {5,7,9}
+- Number of Filters in First Convolutional Layer (K[1]): {128, 256}
+- Number of Filters in Second Convolutional Layer (K[2]): {128, 256}
+
+Twenty random combinations were created of the selection of hyperparameters above. Each of the 20 models was trained on 10000 samples from the dataset for 2 epochs with a batch size of 100 and the Adam optimizer with α=0.0001, β_1=0.9, β_2=0.999, and an additional learning rate decay such that the learning rate for each subsequent epoch was 0.99 times the learning rate of the previous epoch. Computations were conducted on a GPU via the FloydHub Cloud service - the average AUC score, obtained by averaging each model’s AUC score when evaluated on the validation set across all 3 folds, is displayed below for the twenty models: 
 
 | Hyperparameters          | Average AUC Score  | 
 |--------------------------|--------------------|
@@ -180,66 +62,74 @@ As an example, the number of neurons in the fully-connected layer ("fc1" in the 
 | f=9; K[1]=128; K[2]=128  | 0.9174             | 
 | f=5; K[1]=128; K[2]=512  | 0.9691             | 
 
-**Best: Neurons = 200, Mean = 0.9633, Std = 0.003427**
+**Final Selection: f = 7, K[1] = 256, K[2] = 256 with AUC = 0.9461 **
 
+Many authors have found it useful, for CNNs in which filters are learned via unsupervised learning, to provide as much information as possible to the classifier by setting the number of clusters learned by K-Means (and therefore the number of convolutional filters) for each layer as large as possible. The table verifies that, in general, performance improves as the total number of filters (i.e. K[1]+K[2]) increases. In particular, many of the best performing models contained the maximum number of filters permitted by the grid in the second convolutional layer (K[2]=512) and first convolutional layer (K[1]=256). 
 
-The final model architecture was based off of the results of hyperparameter optimization, as well as the approach taken by June Zbontar (5th in the Competition) in [The Marinexplore and Cornell University Whale Detection Challenge.](https://www.kaggle.com/c/whale-detection-challenge) The final tuned architecture is depicted below: 
-
-![cnn_architecture](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/cnn_architecture.png)
-
-Filter Visualization (0th Layer)
-=========================
-
-The filters of the 0th convolutional layer in CNNs (applied to the raw input images) are often "human-interpretable" and have patterns that are easy to correlate with patterns of the input images.
-
-![filters_sup](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/filters_sup.png)
-
-*Note: Many patches appear to have patterns from the higher-intensity, brightly yellow-colored areas of the spectrogram containing a right whale upcall.*
+The final hyperparameter combination was chosen in the interest of preserving computational resources and maintaining symmetry with the baseline model: by using similar hyperparameters, a similar architecture, and similar total trainable parameter count, comparison with the baseline model’s performance was facilitated. Note that both the CRNN and the baseline model have two convolutional layers – in order to further maintain symmetry, and since the table demonstrates no clear trend in performance improvement with respect to filter size, the filter size (f) for those convolutional layers was set to 7 for the CRNN. In addition, K[1] was maintained at the maximum value of 256 in the grid, but K[2] was restricted to a (slightly less optimal) value of 256 so that the total trainable parameter count of both the baseline model and CRNN are maintained at roughly the same magnitude. 
 
 Results of Training
 =========================
 
-The CNN model was trained for 14 epochs and a batch size of 100 on a training set of 84000 audio files (42000 vertically-enhanced spectrograms and 42000 horizontally-enhanced spectrograms). Training took approximately 7 minutes on a Tesla K80 GPU (via FloydHub Cloud Service). The test set consisted of 10000 audio files (5000 vertically-enhanced spectrograms and 5000 horizontally-enhanced spectrograms). The loss and accuracy of the training set, and ROC-AUC score of the test set were evaluated by Keras for every epoch during training and depicted below. The final ROC-AUC score for the training set after 14 epochs was found to be 98.50%, while the ROC-AUC score for the test set was found to be 98.29%.
+Performance statistics for the baseline model were obtained using stratified k-fold cross-validation, with k=10. Computations were once again conducted on a GPU via the FloydHub Cloud Service, with ~20 minutes total computation time. Results are displayed in the table below:
 
-- ROC-AUC Score vs Epoch (Graph)
+Baseline Model
 
-![AUC-Epoch_ModelSup](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Graphs/AUC-Epoch_ModelSup.png)
+| Mean Training Set AUC Score | Mean Test Set AUC Score | 
+|-----------------------------|-------------------------|
+| 99.0212%                    | 98.5120%                | 
 
-- ROC-AUC Score vs Epoch (Table)
+Performance statistics were likewise obtained for the CRNN, implementing the final hyperparameter combination chosen, using k-fold cross-validation with k=10 and ~8 hours total computation time. The results are displayed below:
 
-| Epoch                 | Loss        | Accuracy    | ROC-AUC     | 
-|-----------------------|-------------|-------------|-------------|
-| 1/14                  | 0.1606      | 0.9462      | 0.9548      | 
-| 2/14                  | 0.1092      | 0.9613      | 0.9534      | 
-| 3/14                  | 0.0992      | 0.9646      | 0.9712      | 
-| 4/14                  | 0.0953      | 0.9660      | 0.9782      | 
-| 5/14                  | 0.0922      | 0.9665      | 0.9749      | 
-| 6/14                  | 0.0899      | 0.9673      | 0.9571      | 
-| 7/14                  | 0.0875      | 0.9678      | 0.9751      | 
-| 8/14                  | 0.0855      | 0.9684      | 0.9825      | 
-| 9/14                  | 0.0852      | 0.9687      | 0.9798      | 
-| 10/14                 | 0.0847      | 0.9690      | 0.9662      | 
-| 11/14                 | 0.0832      | 0.9698      | 0.9775      | 
-| 12/14                 | 0.0836      | 0.9689      | 0.9818      | 
-| 13/14                 | 0.0810      | 0.9700      | 0.9796      | 
-| 14/14                 | 0.0812      | 0.9697      | 0.9709      | 
+Convolutional Recurrent Neural Network
 
-**Test ROC-AUC Score = 0.9829**
+| Mean Training Set AUC Score | Mean Test Set AUC Score | 
+|-----------------------------|-------------------------|
+| 99.0240%                    | 98.5517%                | 
 
-ROC Curves
-------
+The CRNN is therefore able to achieve a ~0.002% increase in performance with respect to the training set and ~0.04% increase in performance with respect to the test set. At first glance, the longer computation time, more complex architecture, and minimal increase in AUC score may lead to the conclusion that the baseline model is the more optimal of the two. However, there are several important points to note about the practical implementation of training for the CRNN, which prohibited the model from achieving optimal performance. To limit the computational resources required, only 10000 samples in the dataset were used in the unsupervised learning procedure. In other words, patches were extracted from only 10000 random samples from the training set for the K-Means algorithm to learn filters for the first convolutional layer, the same 10000 samples were used to train the autoencoder, and the same 10000 samples were used by K-Means to learn filters for the second convolutional layer. Ideally, a much larger number of samples would have been used. 
 
-- Training Set ROC Curve vs Test Set ROC Curve
-![ROC_ModelSup_BP](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Graphs/ROC_ModelSup_BP.png)
+The advantage of unsupervised learning (as used in the CRNN) over supervised learning (as used in the baseline model) is, after all, the ability to use the significantly greater quantity of available unlabeled data to learn abstract, generalizable patterns. The learned convolutional filters were therefore not as generalizable or informative as the ideal and were dependent on the particular 10000 random samples given to K-Means for clustering from the training set. In addition, in an ideal scenario, the number of filters in the second and/or first convolutional layers would have been set to a greater value such as 512, enabling an increase in features given to the classifier. A larger set of model hyperparameters could have also been further optimized and the number of epochs of no improvement for the early stopping technique extended to a larger value such as 10, which would have allowed the instances of the CRNN to train for more epochs and achieve higher AUC scores. 
 
-*Note: Predictions on the test set are made using the union of the predictions on the vertically-enhanced spectrograms and horizontally-enhanced spectrograms (BP=Both Predictions).*
+An experiment, for example, was conducted in which the number of epochs of no improvement for early stopping was set to 5 (instead of the default of 1 used in the k-fold cross-validation procedure, which typically terminated training before epoch 100 and yielded the AUC scores reported in the preceding table). With the number of epochs of no improvement set to 5, model performance on the validation set continuously improved even through epoch 200, demonstrating the potential of the CRNN to achieve significantly higher AUC scores than the baseline model given greater computational resources. 
 
-- Test Set ROC Curves
+This potential of the CRNN to surpass the performance of the baseline model can most likely be attributed to its use of a Bidirectional LSTM instead of fully-connected layers. One could argue that the Bidirectional LSTM more concisely captures informative features from the dataset to give to the output classification layer: recall that the fully-connected layers in the baseline model take flattened image matrix volumes as input, thereby losing spatial information and context, while the Bidirectional LSTM in the CRNN takes time series of frequency vectors as input, thereby allowing it to learn important long-range dependencies in the spectrograms. 
 
-![ROC_ModelSup_TestOnly](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Graphs/ROC_ModelSup_TestOnly.png)
+Modules and Installation Instructions
+=========================
 
-*Note: The three curves represent predictions only on the vertically-enhanced spectrograms in the test set (VP=Vertically-Enhanced Predictions, predictions only on the horizontally-enhanced spectrograms in the test set (HP=Horizontally-Enhanced Predictions), and the union of the predictions on both types of images (BP=Both Predictions).*
+**"Standard" Modules Used (Included in Anaconda Distribution):** numpy, matplotlib, pylab, glob, aifc, os
 
-- Training Set ROC Curve vs Test Set ROC Curves
+If necessary, these modules can also be installed via PyPI. For example, for the "numpy" module: 
 
-![ROC_ModelSup_All](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network/blob/master/Images/Graphs/ROC_ModelSup_All.png)
+        pip install numpy
+
+**Additional Modules used:** skimage, sklearn, keras
+
+skimage and sklearn can be installed via PyPI. For example, for the "scikit-image" module:
+
+        pip install scikit-image
+
+For Keras, follow the instructions given in the [documentation](https://keras.io/#installation). Specifically, install the TensorFlow backend and, of the optional dependencies, install HDF5 and h5py if you would like to load and save your Keras models. 
+
+Correct Usage
+=========================
+
+If you would like to replicate the process I used to train the CRNN model, perform the following:
+First, download the files corresponding to the predefined dataset () to the desired directory on your computer.
+Then run:
+
+    python crnn_training.py 
+    
+This trains the weights of the CRNN model on the pre-defined datasets. With the "model" variable referring to the sklearn-wrapped Keras model, this trained model can be saved to your computer using the command:
+
+    model.model.save('whale_cnn.h5')  
+    
+Note: Since "model" has an sklearn wrapper, you must use model.model.save instead of model.save (as you would for a normal Keras model) to save it to your computer. 
+
+Code is also provided demonstrating my hyperparameter optimization process via RandomizedSearchCV. If you would like to replicate the procedure to tune the filter size (f), number of filters in the first convolutional layer (K[1]), and number of filters in the second convolutional layer (K[2]), first download the files corresponding to the pre-defined datasets (if not previously downloaded). 
+Then run:
+
+    python tuning.py 
+    
+This prints the best score and corresponding parameter combination found by RandomizedSearchCV, along with the mean scores and standard deviation of the scores found for all of the other parameter combinations. 
