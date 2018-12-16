@@ -3,9 +3,9 @@ Right Whale Detection Challenge Part III
 
 Convolutional Recurrent Neural Network to Recognize Right Whale Upcalls 
 
-Tackles the same [challenge](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux) and uses the same [dataset](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) as the supervised CNN model. 
+Tackles the same [challenge](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux) and uses the same [dataset](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) as the [Baseline Model](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Neural-Network).
 
-Experimentation with unsupervised learning of convolutional filters (via energy-correlated receptive field grouping and 1x1 convolutions) failed to improve upon the performance of the baseline supervised CNN. In this application, two improvements will be made that will allow the model to surpass baseline performance: the use of a convolutional autoencoder for dimensionality reduction and the addition of recurrent layers for capturing informative, long-range dependencies.
+Experimentation with [unsupervised learning of convolutional filters](https://github.com/cchinchristopherj/Right-Whale-Unsupervised-Model) (via energy-correlated receptive field grouping and 1x1 convolutions) failed to improve upon the performance of the baseline supervised CNN. In this application, two improvements will be made that will allow the model to surpass baseline performance: the use of a convolutional autoencoder for dimensionality reduction and the addition of recurrent layers for capturing informative, long-range dependencies.
 
 Convolutional Autoencoder
 =========================
@@ -14,11 +14,15 @@ According to the manifold hypothesis in machine learning, the informative variat
 
 ![manifold](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/manifold.png)
 
+*The informative variations in each graph lie on simpler, lower-dimensional manifolds (a line in the first case and nonlinear curve in the second). Image Source: [Unsupervised Deep Learning](https://www.slideshare.net/xavigiro/unsupervised-deep-learning-d2l1-insightdcu-machine-learning-workshop-2017)*
+
 To see this, imagine a (√n  x √n) image where the values of each of the n pixels (n dimensions) is sampled from a uniform distribution. (This represents a scenario where informative variations occur across all R^n). Note that shapes, faces, etc. will never appear in images derived in this manner because the actual probability distributions used to generate these structured arrangements are much more concentrated, i.e. their informative variations are located on a much lower-dimensional manifold. The goal of (undercomplete) autoencoders is to learn the coordinates on and structure of these lower-dimensional manifolds: in their design, autoencoders are tasked with learning a mapping from X -> X, in the process identifying a compressed, latent representation containing enough information to accurately reconstruct the original inputs. These compressed representations can provide more informative features for neural network models to make their classification predictions. 
 
-Note that this projection of data into a lower-dimensional space is very reminiscent of PCA - in fact, if the decoder activation functions are the identity and the loss function is the least squares criterion, the subspace learned by the undercomplete autoencoder is exactly the same as that learned by PCA. 
+Note that this projection of data into a lower-dimensional space is very reminiscent of Principal Component Analysis or PCA, a transformation that identifies a linearly uncorrelated, orthogonal basis set called principal components. (Dimensionality reduction is achieved by selecting a subset of these principal components that explain the largest amount of variance in the data and transforming the data to this lower-dimensional space). If the decoder activation functions in the autoencoder are the identity and the loss function is the least squares criterion, the subspace learned by the undercomplete autoencoder is exactly the same as that learned by PCA. 
 
 ![pca](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/pca.png)
+
+*The first two principal components identified by PCA explain the largest amount of variance in the data. Image Source: [The DOs and DON'Ts of Principal Component Analysis](https://medium.com/@sadatnazrul/the-dos-and-donts-of-principal-component-analysis-7c2e9dc8cc48)*
 
 The advantage of autoencoders becomes more clear when nonlinear activation functions are used in the encoder and decoder functions. In this case, the autoencoders can discover lower-dimensional nonlinear manifolds and nonlinear variations in the vectors that may improve the informational content of the extracted features. 
 
@@ -26,9 +30,15 @@ One can see how this concept of autoencoders can easily be extended to CNNs, all
 
 ![conv_autoencoder](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/conv_autoencoder.png)
 
+*Convolutional Autoencoder. Image Source: [Understanding Autoencoders-Unsupervised Learning Technique](https://becominghuman.ai/understanding-autoencoders-unsupervised-learning-technique-82fb3fbaec2)*
+
 The first half of the autoencoder (which maps from the input space to the latent representation) is known as the "encoder" and typically consists of several convolutional layers that perform downsampling to reduce dimensionality, while the second half of the autoencoder (which maps from the latent representation back to the input space) is known as the "decoder" and typically consists of several deconvolutional layers that perform upsampling back to the original dimensionality. (It can be shown that deconvolution, or the transposed convolution, functions as a "reverse" convolution by interchanging the forward and backward propagation steps of the convolution operation. In other words, the backpropagation step of convolution, used to compute the weight updates during gradient descent, is the forward propagation step of deconvolution and vice-versa).  
 
 ![deconv](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/deconv.jpeg)
+
+*While the result of the convolution operation (without padding) results in an output feature map volume of lower spatial resolution (downsampling), the result of the deconvolution operation results in an output feature map volume of higher spatial resolution (upsampling). Image Source: [Image Segmentation](https://leonardoaraujosantos.gitbooks.io/artificial-inteligence/content/image_segmentation.html)*
+
+Note that while deconvolution performs the “reverse” of the convolution, it is not an exact mathematical as the name suggests and only guarantees a feature map volume of the desired shape (of larger spatial dimensions). An appropriate autoencoder architecture would encourage the learning of deconvolutional filters that perform the inverse mapping.
 
 In this application, a convolutional autoencoder is tasked with reducing the dimensionality of the output of the model's first convolutional layer, in order to improve the efficacy of filter learning via K-Means for the second convolutional layer. The convolutional autoencoder's encoder is comprised of several 1x1 convolutional layers, which sequentially halve the number of channels until the number of channels is reduced to 1 (all while preserving the height and width dimensions of the original inputs). In this way, the encoder collapses the original input feature map volume into one "summary" channel that contains enough information for reconstruction. 
 
@@ -41,15 +51,21 @@ A crucial missing component in all the models studied thus far is sequence model
 
 ![lstm](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/lstm.png)
 
+*An LSTM contains several learnable gates that determine the flow and retention of information from previous time steps. The self-recurrent connection and "memory" allow the model to learn correlations between events separated many time steps apart, thereby alleviating the vanishing and exploding gradient problem that prevents effective learning in feedforward neural networks. Image Source: [LSTM Networks for Sentiment Analysis](http://deeplearning.net/tutorial/lstm.html)*
+
 Many authors have combined convolutional neural networks (CNNs) and recurrent neural networks (RNNs) into what are known as CRNNs (Convolutional Recurrent Neural Networks): these models use CNNs as local feature extractors and RNNs as temporal summarizers to identify global temporal patterns, thereby benefiting from the unique advantages of both neural network architectures. 
 
 ![crnn](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/crnn.png)
+
+*Convolutional Recurrent Neural Network (CRNN). In this case, the CRNN is processing a time series of spectrogram images from an audio recording, with the CNN extracting local, time-invariant features, and the RNN extracting sequential features. Both kinds of features are subsequently passed to the final classifier. Image Source: [Multi-Language Identification Using Convolutional Recurrent Neural Network](https://www.semanticscholar.org/paper/Multi-Language-Identification-Using-Convolutional-Lakhani-Mahadev/0da348401d3428844e7daf88a48b0a32ab8b8a68)*
 
 Fully-connected layers are then typically placed after the RNN (with sigmoid or softmax activation function) to act as the classifier. 
 
 In this application, a bidirectional LSTM (capable of using information from not only past time steps, but also future time steps, to make predictions) is placed after the second convolutional layer. 
 
 ![bidirectional_lstm](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/bidirectional_lstm.jpg)
+
+*A Bidirectional LSTM is essentially two LSTMs processing information in the forward and backward time directions. Image Source: [A novel wavelet sequence based on deep bidirectional LSTM network model for ECG signal classification](https://www.sciencedirect.com/science/article/pii/S0010482518300738)*
 
 A single, fully-connected layer that follows serves as the final classifier. 
 
@@ -117,6 +133,8 @@ The advantage of unsupervised learning (as used in the CRNN) over supervised lea
 
 ![pipeline](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/pipeline.png)
 
+*Summary of the Unsupervised Feature Learning Pipeline, in which centroids are learned via K-Means from patches of spectrogram images and these centroids are set as convolutional filters in a CNN or CRNN. Image Source: [Towards the Automatic Classification of Avian Flight Calls for Bioacoustic Monitoring](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0166866)
+
 In addition, in an ideal scenario, the number of filters in the second and/or first convolutional layers would have been set to a greater value such as 512, enabling an increase in features given to the classifier. A larger set of model hyperparameters could have also been further optimized and the number of epochs of no improvement for the early stopping technique extended to a larger value such as 10, which would have allowed the instances of the CRNN to train for more epochs and achieve higher AUC scores. 
 
 An experiment, for example, was conducted in which the number of epochs of no improvement for early stopping was set to 5 (instead of the default of 1 used in the k-fold cross-validation procedure, which typically terminated training before epoch 100 and yielded the AUC scores reported in the preceding table). With the number of epochs of no improvement set to 5, model performance on the validation set continuously improved even through epoch 200, demonstrating the potential of the CRNN to achieve significantly higher AUC scores than the baseline model given greater computational resources. 
@@ -126,6 +144,6 @@ This potential of the CRNN to surpass the performance of the baseline model can 
 Correct Usage
 =========================
 
-Due to size restrictions, it was not possible to upload the pre-defined datasets I used for training, tuning, and cross-validation. However, if you would like to replicate the process I used to obtain the preceding results, the "crnn_training.py", "crnn_tuning.py", and "crnn_cv.py" provide guidance for running the three procedures on your own training, validation, and test sets. 
+Due to size restrictions, it was not possible to upload the pre-defined datasets I used for training, tuning, and cross-validation. However, the files "crnn_training.py", "crnn_tuning.py", and "crnn_cv.py" provide guidance for replicating the procedure used to obtain the preceding results using your own training, validation, and test sets. 
 
-The training set from the original Kaggle competition "train_2.zip" can be found [here](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) and downloaded to the desired directory on your computer.
+The original training set "train_2.zip" can be found [here](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) and downloaded to the desired directory on your computer.
