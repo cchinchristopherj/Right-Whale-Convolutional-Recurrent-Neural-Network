@@ -102,7 +102,7 @@ Twenty random combinations were created of the selection of hyperparameters abov
 | f=9; K[1]=128; K[2]=128  | 0.9174             | 
 | f=5; K[1]=128; K[2]=512  | 0.9691             | 
 
-**Final Selection: f = 7, K[1] = 256, K[2] = 256 with AUC = 0.9461 **
+**Final Selection: f = 7, K[1] = 256, K[2] = 256 with AUC = 0.9461**
 
 Many authors have found it useful, for CNNs in which filters are learned via unsupervised learning, to provide as much information as possible to the classifier by setting the number of clusters learned by K-Means (and therefore the number of convolutional filters) for each layer as large as possible. The table verifies that, in general, performance improves as the total number of filters (i.e. K[1]+K[2]) increases. In particular, many of the best performing models contained the maximum number of filters permitted by the grid in the second convolutional layer (K[2]=512) and first convolutional layer (K[1]=256). 
 
