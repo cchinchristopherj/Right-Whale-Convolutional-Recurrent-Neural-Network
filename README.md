@@ -123,41 +123,9 @@ An experiment, for example, was conducted in which the number of epochs of no im
 
 This potential of the CRNN to surpass the performance of the baseline model can most likely be attributed to its use of a Bidirectional LSTM instead of fully-connected layers. One could argue that the Bidirectional LSTM more concisely captures informative features from the dataset to give to the output classification layer: recall that the fully-connected layers in the baseline model take flattened image matrix volumes as input, thereby losing spatial information and context, while the Bidirectional LSTM in the CRNN takes time series of frequency vectors as input, thereby allowing it to learn important long-range dependencies in the spectrograms. 
 
-Modules and Installation Instructions
-=========================
-
-**"Standard" Modules Used (Included in Anaconda Distribution):** numpy, matplotlib, pylab, glob, aifc, os
-
-If necessary, these modules can also be installed via PyPI. For example, for the "numpy" module: 
-
-        pip install numpy
-
-**Additional Modules used:** skimage, sklearn, keras
-
-skimage and sklearn can be installed via PyPI. For example, for the "scikit-image" module:
-
-        pip install scikit-image
-
-For Keras, follow the instructions given in the [documentation](https://keras.io/#installation). Specifically, install the TensorFlow backend and, of the optional dependencies, install HDF5 and h5py if you would like to load and save your Keras models. 
-
 Correct Usage
 =========================
 
-If you would like to replicate the process I used to train the CRNN model, perform the following:
-First, download the files corresponding to the predefined dataset () to the desired directory on your computer.
-Then run:
+Due to size restrictions, it was not possible to upload the pre-defined datasets I used for training, tuning, and cross-validation. However, if you would like to replicate the process I used to obtain the preceding results, the "crnn_training.py", "crnn_tuning.py", and "crnn_cv.py" provide guidance for running the three procedures on your own training, validation, and test sets. 
 
-    python crnn_training.py 
-    
-This trains the weights of the CRNN model on the pre-defined datasets. With the "model" variable referring to the sklearn-wrapped Keras model, this trained model can be saved to your computer using the command:
-
-    model.model.save('whale_cnn.h5')  
-    
-Note: Since "model" has an sklearn wrapper, you must use model.model.save instead of model.save (as you would for a normal Keras model) to save it to your computer. 
-
-Code is also provided demonstrating my hyperparameter optimization process via RandomizedSearchCV. If you would like to replicate the procedure to tune the filter size (f), number of filters in the first convolutional layer (K[1]), and number of filters in the second convolutional layer (K[2]), first download the files corresponding to the pre-defined datasets (if not previously downloaded). 
-Then run:
-
-    python tuning.py 
-    
-This prints the best score and corresponding parameter combination found by RandomizedSearchCV, along with the mean scores and standard deviation of the scores found for all of the other parameter combinations. 
+The training set from the original Kaggle competition "train_2.zip" can be found [here](https://www.kaggle.com/c/the-icml-2013-whale-challenge-right-whale-redux/data) and downloaded to the desired directory on your computer.
