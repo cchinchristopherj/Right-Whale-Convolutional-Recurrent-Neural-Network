@@ -133,7 +133,7 @@ The advantage of unsupervised learning (as used in the CRNN) over supervised lea
 
 ![pipeline](https://github.com/cchinchristopherj/Right-Whale-Convolutional-Recurrent-Neural-Network/blob/master/Images/pipeline.png)
 
-*Summary of the Unsupervised Feature Learning Pipeline, in which centroids are learned via K-Means from patches of spectrogram images and these centroids are set as convolutional filters in a CNN or CRNN. Image Source: [Towards the Automatic Classification of Avian Flight Calls for Bioacoustic Monitoring](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0166866)
+*Summary of the Unsupervised Feature Learning Pipeline, in which centroids are learned via K-Means from patches of spectrogram images and these centroids are set as convolutional filters in a CNN or CRNN. Image Source: [Towards the Automatic Classification of Avian Flight Calls for Bioacoustic Monitoring](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0166866)*
 
 In addition, in an ideal scenario, the number of filters in the second and/or first convolutional layers would have been set to a greater value such as 512, enabling an increase in features given to the classifier. A larger set of model hyperparameters could have also been further optimized and the number of epochs of no improvement for the early stopping technique extended to a larger value such as 10, which would have allowed the instances of the CRNN to train for more epochs and achieve higher AUC scores. 
 
